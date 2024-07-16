@@ -1,0 +1,86 @@
+initialize() {
+
+	defineCfgParam("MAX_GEN", 100000);
+	defineCfgParam("GENOME_LENGTH", 1e7); // 10Mb genome
+	
+	defineConstant("DOMINANCE", 0.5);
+	defineConstant("SELECTION", 0);
+	defineConstant("SIMULATION_AREA", 1);
+	defineConstant("POPULATION_SIZE", 10000);
+	defineConstant("GRID_SIDE_LENGTH", SIMULATION_AREA/sqrt(POPULATION_SIZE));
+	
+	
+	defineConstant("MUTATION_RATE", 0); // overlay neutral mutations later
+	defineConstant("RECOMB_RATE", 1e-8);
+	
+	initializeSLiMModelType("nonWF");
+	
+	initializeSLiMOptions(dimensionality="xy", periodicity="xy");
+	initializeTreeSeq();
+
+	initializeMutationType("m1", DOMINANCE, "f", SELECTION);
+	
+	initializeGenomicElementType("g1", m1, 1.0);
+	initializeGenomicElement(g1, 0, GENOME_LENGTH - 1);
+	initializeMutationRate(MUTATION_RATE);
+	initializeRecombinationRate(RECOMB_RATE);
+}
+
+function (void) defineCfgParam(string$ name, lifs value) {
+    if (!exists(name))
+        defineConstant(name, value);
+}
+reproduction() {
+	for (i in 0:(sqrt(POPULATION_SIZE) - 1)) { // x axis
+		for (j in 0:(sqrt(POPULATION_SIZE) - 1)) { // y axis
+			current_offspring_x = runif(1, (i*GRID_SIDE_LENGTH), ((i+1)*GRID_SIDE_LENGTH));
+			current_offspring_y = runif(1, (j*GRID_SIDE_LENGTH), ((j+1)*GRID_SIDE_LENGTH));
+			current_offspring_pos = c(current_offspring_x, current_offspring_y);
+			potential_parents = p1.individuals; // pick from all individuals
+			parents = sample(potential_parents, 2);
+			offspring = p1.addCrossed(parents[0], parents[1]);
+			offspring.setSpatialPosition(current_offspring_pos);
+		}	
+	}
+	self.active = 0; // callback only called once in a tick, see section 16.3
+}
+1 early() {
+	// initialize population
+	
+	if(exists("NEUTRAL_FILE")) {
+		catn("reading from file " + NEUTRAL_FILE + "...");
+		sim.readFromPopulationFile(NEUTRAL_FILE);
+		setSeed(rdunif(1, 0, asInteger(2^62) - 1));	
+	} else {
+		sim.addSubpop("p1", POPULATION_SIZE);
+		p1.setSpatialBounds(c(0, 0, sqrt(SIMULATION_AREA), sqrt(SIMULATION_AREA)));
+		pos = c();
+	
+		for (i in 0:(sqrt(POPULATION_SIZE) - 1)) { // x axis
+			for (j in 0:(sqrt(POPULATION_SIZE) - 1)) { // y axis
+				pos = c(pos, runif(1, (i*GRID_SIDE_LENGTH), ((i+1)*GRID_SIDE_LENGTH)));
+				pos = c(pos, runif(1, (j*GRID_SIDE_LENGTH), ((j+1)*GRID_SIDE_LENGTH)));
+			}	
+		}
+		p1.individuals.setSpatialPosition(pos);
+	}
+	
+	community.rescheduleScriptBlock(s1, MAX_GEN, MAX_GEN);
+}
+2: early() {
+	// kill parents
+	inds = p1.individuals;
+	sim.killIndividuals(inds[inds.age > 0]);
+}
+
+2: late() {
+	DIVISOR = asInteger(MAX_GEN/5);
+    if(community.tick % DIVISOR == 0) {
+    	catn("saving .trees file... " + community.tick);
+		sim.treeSeqOutput(OUT_PREFIX + "_" + community.tick + ".trees");
+	}
+}
+
+s1 100000000 late() {
+	sim.simulationFinished();
+}

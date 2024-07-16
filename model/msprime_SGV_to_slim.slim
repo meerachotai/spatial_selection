@@ -1,0 +1,39 @@
+initialize()
+{
+// 	defineConstant("POPULATION_SIZE", 10000);
+// 	defineConstant("GENOME_LENGTH", 1e7); // 10Mb genome
+// 	defineConstant("RECOMB_RATE", 1e-8);
+	setSeed(SEED);
+	
+    initializeSLiMModelType("WF");
+    initializeTreeSeq();
+    initializeMutationRate(0); // overlaid
+    initializeMutationType("m1", 0.5, "f", 0.0); // neutral
+    initializeMutationType("m2", DOMINANCE, "f", SELECTION); // selected
+    initializeGenomicElementType("g1", m1, 1.0); 
+    initializeGenomicElement(g1, 0, GENOME_LENGTH-1);
+    initializeRecombinationRate(RECOMB_RATE);
+}
+1 late() { 
+    sim.readFromPopulationFile(OUT_PREFIX + "_init.trees");
+    sim.treeSeqRememberIndividuals(p0.individuals);
+}
+
+2:100000 late() {
+	mut = sim.mutationsOfType(m2);
+	countFreq = sim.mutationFrequencies(p0, mut);
+	cat("TICK " + sim.cycle + " FREQUENCY " + countFreq + "\n");
+	
+	if (sim.countOfMutationsOfType(m2) == 0) {
+   	fixed = (sum(sim.substitutions.mutationType == m2) == 1);
+		if(fixed) {
+			catn("FIXED " + getSeed() + " " + sim.cycle);
+			sim.treeSeqOutput(OUT_PREFIX + "_fixed.trees");
+			sim.simulationFinished();
+		} else {
+			catn("NOT FIXED " + getSeed());
+			sim.simulationFinished();
+		}
+	}
+}
+

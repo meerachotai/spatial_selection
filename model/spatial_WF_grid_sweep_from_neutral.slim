@@ -1,0 +1,109 @@
+initialize() {
+	defineCfgParam("DOMINANCE", 0.5);
+	defineCfgParam("SELECTION", 0.1);
+	defineCfgParam("DISPERSAL_DISTANCE", 0.015);
+	defineCfgParam("GENOME_LENGTH", 1e7); // 10Mb genome
+	
+	defineConstant("SIMULATION_AREA", 1);
+	defineConstant("POPULATION_SIZE", 10000);
+	defineConstant("GRID_SIDE_LENGTH", SIMULATION_AREA/sqrt(POPULATION_SIZE));
+	
+	defineConstant("MUTATION_RATE", 0); // overlay neutral mutations later
+	defineConstant("RECOMB_RATE", 1e-8);
+	
+	initializeSLiMModelType("nonWF");
+	
+	initializeSLiMOptions(dimensionality="xy", periodicity="xy");
+// 	initializeTreeSeq();
+
+	initializeMutationType("m1", 0, "f", 0); // calculated in first, assigned to tagF
+	
+	initializeGenomicElementType("g1", m1, 1.0);
+	initializeGenomicElement(g1, 0, GENOME_LENGTH - 1);
+	initializeMutationRate(MUTATION_RATE);
+	initializeRecombinationRate(RECOMB_RATE);
+	
+	// reproduction
+	initializeInteractionType(1, "xy", reciprocal=T, maxDistance=DISPERSAL_DISTANCE);
+}
+
+function (void) defineCfgParam(string$ name, lifs value) {
+    if (!exists(name))
+        defineConstant(name, value);
+}
+2: first() {
+	i1.evaluate(p1);
+
+	// Store fitness for parent sampling
+	inds = p1.individuals;
+	counts = inds.countOfMutationsOfType(m1);
+	inds[counts == 0].tagF = 1;
+	inds[counts == 1].tagF = 1 + (DOMINANCE * SELECTION);
+	inds[counts == 2].tagF = 1 + SELECTION;
+}
+reproduction() {
+	for (i in 0:(sqrt(POPULATION_SIZE) - 1)) { // x axis
+		for (j in 0:(sqrt(POPULATION_SIZE) - 1)) { // y axis
+			current_offspring_x = runif(1, (i*GRID_SIDE_LENGTH), ((i+1)*GRID_SIDE_LENGTH));
+			current_offspring_y = runif(1, (j*GRID_SIDE_LENGTH), ((j+1)*GRID_SIDE_LENGTH));
+			current_offspring_pos = c(current_offspring_x, current_offspring_y);
+			potential_parents = i1.nearestNeighborsOfPoint(current_offspring_pos, p1, POPULATION_SIZE);
+			if(size(potential_parents) < 2) {
+				catn("ERROR " + getSeed() + " " + sim.cycle);
+				stop("Error");
+			}
+			parents = sample(potential_parents, 2, weights = potential_parents.tagF); // section 4.2.3
+			offspring = p1.addCrossed(parents[0], parents[1]);
+			offspring.setSpatialPosition(current_offspring_pos);
+		}	
+	}
+	self.active = 0; // callback only called once in a tick, see section 16.3
+}
+1 early() {
+	// initialize population
+	
+	sim.addSubpop("p1", POPULATION_SIZE);
+	p1.setSpatialBounds(c(0, 0, sqrt(SIMULATION_AREA), sqrt(SIMULATION_AREA)));
+	pos = c();
+	
+	for (i in 0:(sqrt(POPULATION_SIZE) - 1)) { // x axis
+		for (j in 0:(sqrt(POPULATION_SIZE) - 1)) { // y axis
+			pos = c(pos, runif(1, (i*GRID_SIDE_LENGTH), ((i+1)*GRID_SIDE_LENGTH)));
+			pos = c(pos, runif(1, (j*GRID_SIDE_LENGTH), ((j+1)*GRID_SIDE_LENGTH)));
+		}	
+	}
+	p1.individuals.setSpatialPosition(pos);
+}
+2: early() {
+	// kill parents
+	inds = p1.individuals;
+	sim.killIndividuals(inds[inds.age > 0]);
+}
+1 late() {
+	// read in neutral burn-in
+	cat("reading from population file..." + NEUTRAL_FILE + "\n");
+	sim.readFromPopulationFile(NEUTRAL_FILE);
+	
+	// add beneficial mutation
+	target = sample(p1.genomes, 1);
+	target.addNewDrawnMutation(m1, asInteger(GENOME_LENGTH/2));
+}
+2:100000000 late() {
+// 	catn("Number of individuals: " + p1.individualCount);
+	countFreq = sim.mutationFrequencies(p1, NULL);
+	// cat("TICK " + sim.cycle + " FREQUENCY " + countFreq + "\n");
+	
+	if(size(countFreq) != 0) { 
+		// If fixed, print out seed and the time to fixation
+		if(countFreq == 1) {
+			catn("FIXED " + getSeed() + " " + sim.cycle); // TODO: also write this to an output file
+// 			sim.treeSeqOutput(OUT_PREFIX + "_fixed.trees");
+			sim.simulationFinished();
+		}
+	} else {
+		// If lost, print out only seed
+		catn("NOT FIXED " + getSeed() + " " + sim.cycle); // TODO: also write this to an output file
+		sim.simulationFinished();
+	}
+}
+
