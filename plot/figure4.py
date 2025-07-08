@@ -32,8 +32,8 @@ cm = sns.color_palette(palette='Purples_d', n_colors = 3)
 
 select_arr = [0.01,0.05, 0.1]
 for idx, SELECTION in enumerate(select_arr):
-    print(DIR + "/" + SUBDIR + "/fixation_stats_" + str(SELECTION) + ".fix")
-    d = pd.read_csv(DIR + "/" + SUBDIR + "/fixation_stats_" + str(SELECTION) + ".fix")
+    print(DIR + "/" + SUBDIR + "/fixation_stats_" + str(SELECTION) + "_update.fix")
+    d = pd.read_csv(DIR + "/" + SUBDIR + "/fixation_stats_" + str(SELECTION) + "_update.fix")
     d['dispersal'] = d['dispersal'].apply(lambda x: 1 if x == 0.5 else x)
     d = d[d['dispersal'] != 0.08]
     d["pfix_std"] = np.sqrt(d["pfix"] * (1 - d["pfix"]) / d["total"])
@@ -56,7 +56,7 @@ for idx, SELECTION in enumerate(select_arr):
     print(y)
     yerr = d["tfix_std"] / tfix_panmictic
 
-    ax[0].plot(d["dispersal"][:-1], y[:-1], color = cm[idx], marker = "o", label = "s = {:.2f}".format(SELECTION), linestyle = "dotted")
+    ax[0].plot(d["dispersal"][:-1], y[:-1], color = cm[idx], marker = "o", label = "$s = {:.2f}$".format(SELECTION), linestyle = "dotted")
     ax[0].errorbar(d["dispersal"][:-1], y[:-1], yerr=yerr[:-1], fmt='o', capsize=2, color = np.array(cm)[idx]) # remove the d = 1
 
 # matplotlib.rcParams['xtick.minor.size'] = 0
@@ -90,8 +90,8 @@ ax[0].set_yticks(np.arange(0,2.6,0.5))
 ax[1].set_ylabel("fixation probability (relative to expectation)")
 ax[0].set_ylabel("time to fixation (relative to panmictic)")
 
-lines,labels = ax[1].get_legend_handles_labels()
-ax[1].legend(lines, labels,bbox_to_anchor=(0.75, 0.45), loc='upper right',markerscale=0.8)
+lines,labels = ax[0].get_legend_handles_labels()
+ax[0].legend(lines, labels,bbox_to_anchor=(0.9, 0.95), loc='upper right',markerscale=0.8)
 
 for i, label in enumerate(('A', 'B')):
     ax[i].text(-0.4, 1.2, label, transform=ax[i].transAxes, fontsize = 8,va='top', ha='right', weight = "bold")

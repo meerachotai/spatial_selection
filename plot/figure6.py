@@ -40,7 +40,7 @@ x = np.arange(0, SAMPLE_SIZE + 1, 1)
 disp_arr = [0.015, 0.02, 0.04, 0.1,0.5]
 
 select_arr = [0,0.01, 0.1]
-window_sizes = [1e7,150000,1000000]
+window_sizes = [1e7,150000,1000000] # for S5 change this to window_sizes = [1e7,150000,150000] and [1e7,1000000,1000000]
 window_sizes = [float(win) for win in window_sizes]
 select_arr = [float(s) for s in select_arr]
 
@@ -66,7 +66,7 @@ for sampling_idx, SUFFIX in enumerate(SUFFIXES):
             else:
                 axs[sampling_idx,idx].scatter(sfs.columns[1:-1]/100,sfs.iloc[0,1:-1].tolist(), color = np.array(colors)[color_idx], s = 0.8, alpha = 0.8)
 
-# ---------------------------Figure GB----------------------------------------------------------------
+# ---------------------------Figure 6B----------------------------------------------------------------
 
 LABELS = ["global","local"]
 # cm = sns.diverging_palette(220, 20, s=150, l=45, n=len(SUFFIXES))
@@ -183,14 +183,14 @@ disp_arr = [0.5,0.015]
 palette = sns.husl_palette(5, h = 0.5, s = 0.8)
 palette = palette * math.ceil(tothap/len(palette))
 
-fig, axs = plt.subplots(nrows=3, ncols = 1, figsize = [3.6,1], sharex = True)
+fig, axs = plt.subplots(nrows=3, ncols = 1, figsize = [3.6,1], sharex = False)
 
 plot_idx = 0
 
 for idx, DISPERSAL_DISTANCE in enumerate(disp_arr):
     for sampling_idx, SUFFIX in enumerate(SUFFIXES):
         
-        d = pd.read_csv(OUT + "_" + str(SELECTION) + "_" + str(DISPERSAL_DISTANCE) + "_" + SUFFIX + ".hfs", delim_whitespace = True, header = None, index_col = None,
+        d = pd.read_csv(OUT + "_" + str(SELECTION) + "_" + str(DISPERSAL_DISTANCE) + "_" + SUFFIX + ".hfs", sep = "\t", header = None, index_col = None,
                        names = ["DISPERSAL","SELECTION"] + [i for i in range(tothap)])
         
         meanhc = d.iloc[:,2:].mean(axis = 0) / SAMPLE_SIZE
@@ -198,27 +198,57 @@ for idx, DISPERSAL_DISTANCE in enumerate(disp_arr):
         sns.despine(ax=axs[plot_idx], left=True)
     
         x1 = 0
+        x2_list = []
         for i, c in enumerate(meanhc):
             x2 = x1 + c
+            x2_list.append(x2)
             if c > (1/SAMPLE_SIZE):
                 color = palette[i]
+                # x2_list.append(x2)
             else:
                 color = "lightgrey"
-            axs[plot_idx].axvspan(x1, x2, facecolor=color, edgecolor = "white")
+            axs[plot_idx].axvspan(x1, x2, facecolor=color,linewidth=0)
             x1 = x2
+            
+        print(plot_idx)
+        # print(x2_list)
+
+        if(plot_idx < 2):
+            axs[plot_idx].xaxis.set_ticks_position('top')
+            axs[plot_idx].xaxis.set_tick_params(labeltop=False)
+            axs[plot_idx].set_xticks(x2_list)
+            axs[plot_idx].tick_params(axis='x', width=0.3, color = "black")
+        else:
+            axs[plot_idx].set_xticks(np.arange(0, 1.2, 0.2))
+            axs[plot_idx].xaxis.set_ticks_position('bottom')
+            
+            ax3_top = axs[plot_idx].twiny()
+            ax3_top.set_xlim(axs[plot_idx].get_xlim())  # Match the x-limits of the bottom axis
+            ax3_top.set_xticks(x2_list)  # Example custom ticks for the top
+            ax3_top.xaxis.set_tick_params(labeltop=False)  # No labels on top
+
+            axs[plot_idx].tick_params(axis='x', width=0.3, color = "black")
+            ax3_top.tick_params(axis='x', width=0.3, color = "black")
         axs[plot_idx].set_yticks([])
-        
+            
+            
         if(DISPERSAL_DISTANCE == 0.5):
             # label = "panmictic"
             label = "dispersal = " + "{:.3f}".format(DISPERSAL_DISTANCE * 2) + "\n" + LABEL[sampling_idx] + " sampling"
         else:
             label = "dispersal = " + "{:.3f}".format(DISPERSAL_DISTANCE) + "\n" + LABEL[sampling_idx] + " sampling"
         axs[plot_idx].set_ylabel(label, rotation=0, labelpad=40, loc = "bottom")
+        
         plot_idx = plot_idx + 1
+        
         if(idx == 0):
             break
+
 for i, label in enumerate(('C', '')):
     axs[i].text(-0.21, 1.2, label, transform=axs[i].transAxes, fontsize = 8,va='top', ha='right', weight = "bold")
+
+for spine in ax3_top.spines.values():
+    spine.set_visible(False)
 
 fig.savefig("fig6leftbottom.pdf", bbox_inches = "tight", transparent = True)
 

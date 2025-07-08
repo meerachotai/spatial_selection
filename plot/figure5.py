@@ -27,20 +27,19 @@ for ax in axs[1, :]:
 axbig = fig.add_subplot(gs[1, :])
 
 # -------------------------------Figure 5A-------------------------------------------------------------
-pi_neutral = [0.000626,0.000407]
+pi_neutral = [61385.148280,39910.496561]
 
 N = 10000
 r = 1e-8
 g = int(1e7)
 center = int(g/2)
 
-def exp_pi(SELECTION, DOMINANCE):
-    calc_x = [abs(i - center) for i in range(g)] # distance from center
-    x = [i for i in range(g)]
+def exp_pi(SELECTION, DOMINANCE,x, center):
+    calc_x = [abs(i - center) for i in x] # distance from center
     sh = SELECTION * DOMINANCE # heterozygous s
     ex = -(2 * r * np.array(calc_x)) / sh
     y = 1 - ((4 * N * sh) ** ex)
-    return x, y
+    return y
     
 # getting a subset
 # output from sampled_pi_windows.py
@@ -55,7 +54,8 @@ DISPERSAL_ARRAY = [0.015, 0.5]
 SELECTION_ARRAY = [0.01, 0.1]
 DOMINANCE = 0.5
 SUFFIX = "sampling_rd"
-average_interval = 10
+average_interval = 20
+slide_interval = 10
 
 colors = sns.diverging_palette(220, 20, s=150, l=45, n=2)
 for axes_idx, SELECTION in enumerate(SELECTION_ARRAY):
@@ -63,14 +63,22 @@ for axes_idx, SELECTION in enumerate(SELECTION_ARRAY):
         idd = str(DISPERSAL_DISTANCE) + "_" + str(SELECTION) + "_" + str(DOMINANCE) 
         file_prefix =  DIR + SUBDIR + "/" + idd
         if SELECTION == 0.01:
-            d = pd.read_csv(DIR + SUBDIR + "/" + "window_1e6_500_" + idd + "_" + SUFFIX + ".pi", delim_whitespace = True, header = 0)
+            d = pd.read_csv(DIR + SUBDIR + "/" + "window_" + idd + "_" + SUFFIX + ".branch_pi", delim_whitespace = True, header = 0)
         else:
-            d = pd.read_csv(DIR + SUBDIR + "/" + "window_" + idd + "_" + SUFFIX + ".pi", delim_whitespace = True, header = 0)
-        averages_d = pd.DataFrame()
-        for i in range(0, d.shape[1], average_interval):
+            d = pd.read_csv(DIR + SUBDIR + "/" + "window_" + idd + "_" + SUFFIX + ".branch_pi", delim_whitespace = True, header = 0)
+
+        pd_cols = []
+        cols = np.arange(0, d.shape[1]-(average_interval-slide_interval)-1, average_interval-slide_interval)
+        for i in cols:
             subset = d.iloc[:, i:i+average_interval]
             averages = subset.mean(axis=1)
-            averages_d[d.columns[i]] = averages
+            pd_cols.append(averages)
+            # if(i < cols[3]):
+                # print(d.columns[i], d.columns[i+average_interval])
+        averages_d = pd.concat(pd_cols, axis = 1)
+        averages_d.columns = d.columns[cols]
+        # print(d.columns[cols][:4])
+        
         mean = averages_d.mean(axis = 0)#/window_length # per bp for 10kbp window
         windows = averages_d.columns.astype(float)
         mean_adj = mean/pi_neutral[idx_disp]
@@ -80,14 +88,22 @@ for axes_idx, SELECTION in enumerate(SELECTION_ARRAY):
         LABEL = r"$d$ = " + "{:.3f}".format(DISPERSAL_DISTANCE)
         axs[0,axes_idx].scatter(windows/1000, mean_adj,marker='o', color = colors[idx_disp], label = LABEL, alpha = 0.5)
         axs[0,axes_idx].set_title(r"$s$ = " + "{:.2f}".format(SELECTION))
-    axs[0,axes_idx].set_xlabel("position (in kbp)")
-    x, y = exp_pi(SELECTION, DOMINANCE)
-    axs[0,axes_idx].plot(np.array(x[(int(windows[0])):(int(windows[-1]))])/1000, np.array(y[(int(windows[0])):(int(windows[-1]))]), color = "grey", linestyle = "--")
+        axs[0,axes_idx].set_xlabel("position (in kbp)")
 
-axs[0,0].set_ylim([0,1.21])
-axs[0,1].set_ylim([0,1.21])
+    print(SELECTION)
+    x = [float(i) for i in d.columns]
+    print(x[:3])
+    y = exp_pi(SELECTION, DOMINANCE, x,center)
+    print(y[:3])
+    cols = np.arange(0, d.shape[1]-(average_interval-slide_interval)-1, average_interval-slide_interval)
+    sliding_y = []
+    for i in cols:
+        sliding_y.append(y[i:(i+average_interval)].mean())
+    axs[0,axes_idx].plot(windows/1000, sliding_y, color = "grey", linestyle = "--")
 
-axs[0,0].set_ylabel(r"$\frac{\pi(x)}{\pi_0}$")
+    print(windows[:3])
+
+axs[0,0].set_ylabel(r"average pairwise coalescence time (relative to neutral)")
 axs[0,1].get_yaxis().set_visible(False)
 # https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.legend.html
 axs[0,0].legend(bbox_to_anchor=(0.48, 0.23), loc='upper right',markerscale=0.7, handletextpad = 0.03, borderpad = 0.2)

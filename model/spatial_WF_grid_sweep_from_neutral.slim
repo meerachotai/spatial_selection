@@ -4,6 +4,12 @@ initialize() {
 	defineCfgParam("DISPERSAL_DISTANCE", 0.015);
 	defineCfgParam("GENOME_LENGTH", 1e7); // 10Mb genome
 	
+//	defineCfgParam("STATUSFILE", "test");
+//	defineCfgParam("OUT_PREFIX", "test");
+//	defineCfgParam("REPLICATE", 1); // seeding from which neutral replicates?
+
+	defineConstant("freq_vec", c(0,0));
+	
 	defineConstant("SIMULATION_AREA", 1);
 	defineConstant("POPULATION_SIZE", 10000);
 	defineConstant("GRID_SIDE_LENGTH", SIMULATION_AREA/sqrt(POPULATION_SIZE));
@@ -14,7 +20,7 @@ initialize() {
 	initializeSLiMModelType("nonWF");
 	
 	initializeSLiMOptions(dimensionality="xy", periodicity="xy");
-// 	initializeTreeSeq();
+	initializeTreeSeq();
 
 	initializeMutationType("m1", 0, "f", 0); // calculated in first, assigned to tagF
 	
@@ -89,20 +95,34 @@ reproduction() {
 	target.addNewDrawnMutation(m1, asInteger(GENOME_LENGTH/2));
 }
 2:100000000 late() {
-// 	catn("Number of individuals: " + p1.individualCount);
-	countFreq = sim.mutationFrequencies(p1, NULL);
-	// cat("TICK " + sim.cycle + " FREQUENCY " + countFreq + "\n");
+	mut = sim.mutationsOfType(m1);
+	countFreq = sim.mutationFrequencies(p1, mut);
 	
-	if(size(countFreq) != 0) { 
+	if(size(countFreq) != 0) { // if mutation exists 
 		// If fixed, print out seed and the time to fixation
+		if(freq_vec[0] == 0) {
+			if(countFreq >= 0.05) {
+				freq_vec[0] = sim.cycle;
+			}
+		} else if(freq_vec[1] == 0) {
+			if(countFreq >= 0.5) {
+				freq_vec[1] = sim.cycle;
+			}
+		}
+		
 		if(countFreq == 1) {
-			catn("FIXED " + getSeed() + " " + sim.cycle); // TODO: also write this to an output file
-// 			sim.treeSeqOutput(OUT_PREFIX + "_fixed.trees");
+			catn("FIXED " + getSeed() + " " + sim.cycle);
+			catn("saving in... " + OUT_PREFIX + "_fixed.trees");
+			sim.treeSeqOutput(OUT_PREFIX + "_fixed.trees");
+			
+			writeFile(STATUSFILE + ".freq", paste(getSeed(), REPLICATE, paste(freq_vec, sep = "\t"),sim.cycle, sep = "\t"), append = T);
+			writeFile(STATUSFILE + ".status", paste(getSeed(), REPLICATE, "FIXED", sep = "\t"), append = T);
 			sim.simulationFinished();
 		}
 	} else {
 		// If lost, print out only seed
-		catn("NOT FIXED " + getSeed() + " " + sim.cycle); // TODO: also write this to an output file
+		catn("NOT-FIXED " + getSeed() + " " + sim.cycle);
+		writeFile(STATUSFILE + ".status", paste(getSeed(), REPLICATE, "LOST", sep = "\t"), append = T);
 		sim.simulationFinished();
 	}
 }

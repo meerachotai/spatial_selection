@@ -44,7 +44,7 @@ if(args.mid):
 if(args.random_diploid):
 	SUFFIX = "sampling_rd"	
 
-DISPERSAL_ARRAY = [0.015, 0.5] # 0 is panmictic
+DISPERSAL_ARRAY = [0.015, 0.5] # 0.5 is panmictic
 DOMINANCE = 0.5
 
 genome_length = 1e7
@@ -59,8 +59,6 @@ windows.append(genome_length)
 
 SAMPLE_SIZE = 100
 
-piWindows = []
-
 for DISPERSAL_DISTANCE in DISPERSAL_ARRAY:
 	print(DISPERSAL_DISTANCE, SELECTION)
 	file_prefix = DIR + SUBDIR + "/" + str(DISPERSAL_DISTANCE) + "_" + str(SELECTION) + "_" + str(DOMINANCE) + "_sampling"  + "/*"+ str(SAMPLE_SIZE) + "_" + SUFFIX + ".trees"
@@ -68,14 +66,14 @@ for DISPERSAL_DISTANCE in DISPERSAL_ARRAY:
 	files = np.random.choice(files, N)
 	print(len(files))
 	
-	outfile = OUT + "_" + str(DISPERSAL_DISTANCE) + "_" + str(SELECTION) + "_" + str(DOMINANCE) + "_" + SUFFIX + ".pi"
+	outfile = OUT + "_" + str(DISPERSAL_DISTANCE) + "_" + str(SELECTION) + "_" + str(DOMINANCE) + "_" + SUFFIX + ".branch_pi"
 	print(outfile)
 	pi_output = open(outfile, "w")
 	pi_output.write('\t'.join("{:.5f}".format(item) for item in windows[1:-1]) + "\n")
 	pi = []
 	for file in tqdm(files):
 		nts = tskit.load(file)
-		p = np.squeeze(nts.diversity(windows = windows, span_normalise = False))[1:-1] # ignore first, last windows
+		p = np.squeeze(nts.diversity(windows = windows, span_normalise = False, mode = "branch"))[1:-1] # ignore first, last windows
 		p = p/SUB_WINDOW_SIZE
 		pi_output.write('\t'.join("{:.5f}".format(item) for item in p) + "\n")
 	pi_output.close()

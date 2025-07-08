@@ -2,6 +2,12 @@ initialize() {
 	defineCfgParam("DOMINANCE", 0.5);
 	defineCfgParam("SELECTION", 0.1);
 	defineCfgParam("GENOME_LENGTH", 1e7); // 10Mb genome
+	defineCfgParam("fudge_factor", 10); // expectation is 1 selfing by chance per generation, regardless of N, I think?
+	
+//	defineCfgParam("STATUSFILE", "test");
+//	defineCfgParam("OUT_PREFIX", "test");
+//	defineCfgParam("REPLICATE", 1); // seeding from which neutral replicates?
+	
 	
 	defineConstant("SIMULATION_AREA", 1);
 	defineConstant("POPULATION_SIZE", 10000);
@@ -14,9 +20,11 @@ initialize() {
 	initializeSLiMModelType("nonWF");
 	
 	initializeSLiMOptions(dimensionality="xy", periodicity="xy");
-// 	initializeTreeSeq();
+	initializeTreeSeq();
 
 	initializeMutationType("m1", 0, "f", 0); // calculated in first, assigned to tagF
+	
+	defineConstant("freq_vec", c(0,0));
 	
 	initializeGenomicElementType("g1", m1, 1.0);
 	initializeGenomicElement(g1, 0, GENOME_LENGTH - 1);
@@ -37,18 +45,38 @@ function (void) defineCfgParam(string$ name, lifs value) {
 	inds[counts == 2].tagF = 1 + SELECTION;
 }
 reproduction() {
+	potential_parents = p1.individuals;
+	n_parent_pairs = POPULATION_SIZE;
+	total_parent_pairs = n_parent_pairs + fudge_factor;
+	num_draws = total_parent_pairs * 2;
+	parents = sample(potential_parents, num_draws, replace = T, weights=potential_parents.tagF); // section 4.2.3
+	
+	parents1 = parents[seqLen(total_parent_pairs)];
+	parents2 = parents[seqLen(total_parent_pairs) + total_parent_pairs];
+
+	selfed = (parents1 == parents2);
+// 	catn("selfed pairs = " + sum(selfed));
+	parents1 = parents1[!selfed];
+	parents2 = parents2[!selfed];
+	
+	if (size(parents1) < n_parent_pairs) {
+		catn("ERROR " + getSeed() + " " + sim.cycle);
+		stop("Error - fudge factor needs to be larger");
+	}
+	parent_index = 0;
 	for (i in 0:(sqrt(POPULATION_SIZE) - 1)) { // x axis
 		for (j in 0:(sqrt(POPULATION_SIZE) - 1)) { // y axis
-			current_offspring_x = runif(1, (i*GRID_SIDE_LENGTH), ((i+1)*GRID_SIDE_LENGTH));
-			current_offspring_y = runif(1, (j*GRID_SIDE_LENGTH), ((j+1)*GRID_SIDE_LENGTH));
+			current_offspring_x = runif(1, (i * GRID_SIDE_LENGTH), ((i + 1) * GRID_SIDE_LENGTH));
+			current_offspring_y = runif(1, (j * GRID_SIDE_LENGTH), ((j + 1) * GRID_SIDE_LENGTH));
 			current_offspring_pos = c(current_offspring_x, current_offspring_y);
-			potential_parents = p1.individuals;
-			parents = sample(potential_parents, 2, weights = potential_parents.tagF); // section 4.2.3
-			offspring = p1.addCrossed(parents[0], parents[1]);
+			offspring = p1.addCrossed(parents1[parent_index], parents2[parent_index]);
 			offspring.setSpatialPosition(current_offspring_pos);
-		}	
+			parent_index = parent_index + 1;
+		}
 	}
+	
 	self.active = 0; // callback only called once in a tick, see section 16.3
+
 }
 1 early() {
 	// initialize population
@@ -80,20 +108,34 @@ reproduction() {
 	target.addNewDrawnMutation(m1, asInteger(GENOME_LENGTH/2));
 }
 2:100000000 late() {
-// 	catn("Number of individuals: " + p1.individualCount);
-	countFreq = sim.mutationFrequencies(p1, NULL);
-// 	cat("TICK " + sim.cycle + " FREQUENCY " + countFreq + "\n");
+	mut = sim.mutationsOfType(m1);
+	countFreq = sim.mutationFrequencies(p1, mut);
 	
-	if(size(countFreq) != 0) { 
+	if(size(countFreq) != 0) { // if mutation exists 
 		// If fixed, print out seed and the time to fixation
+		if(freq_vec[0] == 0) {
+			if(countFreq >= 0.05) {
+				freq_vec[0] = sim.cycle;
+			}
+		} else if(freq_vec[1] == 0) {
+			if(countFreq >= 0.5) {
+				freq_vec[1] = sim.cycle;
+			}
+		}
+		
 		if(countFreq == 1) {
 			catn("FIXED " + getSeed() + " " + sim.cycle);
-// 			sim.treeSeqOutput(OUT_PREFIX + "_fixed.trees");
+			catn("saving in... " + OUT_PREFIX + "_fixed.trees");
+			sim.treeSeqOutput(OUT_PREFIX + "_fixed.trees");
+			
+			writeFile(STATUSFILE + ".freq", paste(getSeed(), REPLICATE, paste(freq_vec, sep = "\t"),sim.cycle, sep = "\t"), append = T);
+			writeFile(STATUSFILE + ".status", paste(getSeed(), REPLICATE, "FIXED", sep = "\t"), append = T);
 			sim.simulationFinished();
 		}
 	} else {
 		// If lost, print out only seed
-		catn("NOT FIXED " + getSeed() + " " + sim.cycle);
+		catn("NOT-FIXED " + getSeed() + " " + sim.cycle);
+		writeFile(STATUSFILE + ".status", paste(getSeed(), REPLICATE, "LOST", sep = "\t"), append = T);
 		sim.simulationFinished();
 	}
 }

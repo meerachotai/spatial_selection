@@ -16,11 +16,13 @@ parser.add_argument("subdir", help="subdirectory", type = str)
 parser.add_argument("out", help="outfile (including path)", type = str, default = "out")
 parser.add_argument("-m","--mid", help="midpoint chromosome sampling", action = "store_true")
 parser.add_argument("-rd","--random_diploid", help="random individual sampling", action = "store_true")
+parser.add_argument("-b","--branch", help="use branch mode", action = "store_true")
 
 args = parser.parse_args()
 DIR=args.dir
 SUBDIR=args.subdir
 OUT=args.out
+BRANCH = args.branch
 
 if(args.mid):
 	SUFFIX = "sampling_mid"
@@ -31,7 +33,10 @@ SAMPLE_SIZE = 100
 
 sigma_arr=[0.015, 0.02, 0.04, 0.08, 0.1, 0.5]
 
-output = open(OUT + "_" + SUFFIX + ".pi", "w")
+if(BRANCH):
+	output = open(OUT + "_" + SUFFIX + ".branch_pi", "w")
+else:
+	output = open(OUT + "_" + SUFFIX + ".pi", "w")
 
 
 for disp_idx,DISPERSAL_DISTANCE in enumerate(sigma_arr):
@@ -42,7 +47,10 @@ for disp_idx,DISPERSAL_DISTANCE in enumerate(sigma_arr):
 	p_list = []
 	for file in tqdm(files[:100]):
 		ts = tskit.load(file)
-		p_list.append(np.squeeze(ts.diversity(span_normalise = True)))    
+		if(BRANCH):
+			p_list.append(np.squeeze(ts.diversity(span_normalise = True, mode = "branch")))
+		else:
+			p_list.append(np.squeeze(ts.diversity(span_normalise = True)))
 	output.write(str(DISPERSAL_DISTANCE) + "\t" + '\t'.join("{:.10f}".format(item) for item in p_list) + "\n")
 
 output.close()

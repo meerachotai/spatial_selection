@@ -1,0 +1,96 @@
+// slim -d OUTPREFIX=\"spatial_WF_grid_neutral\" -d DISPERSAL_DISTANCE=0.1 ~/Documents/Project1/SLIM_TIMER/spatial_WF_grid_neutral_calc_distance.slim
+initialize() {
+	defineCfgParam("GENOME_LENGTH", 1e7); // default: 10Mb genome
+	
+	defineConstant("DOMINANCE", 0.5);
+	defineConstant("SELECTION", 0);
+	defineConstant("SIMULATION_AREA", 1);
+	defineConstant("POPULATION_SIZE", 10000);
+	defineConstant("GRID_SIDE_LENGTH", SIMULATION_AREA/sqrt(POPULATION_SIZE));
+
+	defineConstant("MUTATION_RATE", 0); // overlay neutral mutations later
+	defineConstant("RECOMB_RATE", 1e-8);
+	
+	initializeSLiMModelType("nonWF");
+	
+	initializeSLiMOptions(keepPedigrees = T,dimensionality="xy", periodicity="xy");
+	initializeTreeSeq();
+
+	initializeMutationType("m1", DOMINANCE, "f", SELECTION);
+	
+	initializeGenomicElementType("g1", m1, 1.0);
+	initializeGenomicElement(g1, 0, GENOME_LENGTH - 1);
+	initializeMutationRate(MUTATION_RATE);
+	initializeRecombinationRate(RECOMB_RATE);
+	
+	// reproduction
+	initializeInteractionType(1, "xy", reciprocal=T, maxDistance=DISPERSAL_DISTANCE);
+}
+
+function (void) defineCfgParam(string$ name, lifs value) {
+    if (!exists(name))
+        defineConstant(name, value);
+}
+2: first() {
+	i1.evaluate(p1);
+}
+reproduction() {
+	counter = 0;
+	for (i in 0:(sqrt(POPULATION_SIZE) - 1)) { // x axis
+		for (j in 0:(sqrt(POPULATION_SIZE) - 1)) { // y axis
+			current_offspring_x = runif(1, (i*GRID_SIDE_LENGTH), ((i+1)*GRID_SIDE_LENGTH));
+			current_offspring_y = runif(1, (j*GRID_SIDE_LENGTH), ((j+1)*GRID_SIDE_LENGTH));
+			current_offspring_pos = c(current_offspring_x, current_offspring_y);
+			potential_parents = i1.nearestNeighborsOfPoint(current_offspring_pos, p1, POPULATION_SIZE);
+			parents = sample(potential_parents, 2);
+			offspring = p1.addCrossed(parents[0], parents[1]);
+			offspring.setSpatialPosition(current_offspring_pos);
+			
+			if(community.tick == 2) {
+				
+				parent1_pos = parents[0].spatialPosition;
+				parent2_pos = parents[1].spatialPosition;
+				writeFile(OUTPREFIX  + "_" + community.tick + "_" + DISPERSAL_DISTANCE + "_parentdist.txt", paste(counter, current_offspring_pos, parents[0].index, parent1_pos, parents[1].index, parent2_pos, sep = " "), append = T);
+			}
+			
+			counter = counter + 1;
+		}	
+	}
+	self.active = 0; // callback only called once in a tick, see section 16.3
+}
+1 early() {
+	// initialize population
+	
+	if(exists("NEUTRAL_FILE")) {
+		catn("reading from file " + NEUTRAL_FILE + "...");
+		sim.readFromPopulationFile(NEUTRAL_FILE);
+		setSeed(rdunif(1, 0, asInteger(2^62) - 1));	
+	} else {
+		sim.addSubpop("p1", POPULATION_SIZE);
+		p1.setSpatialBounds(c(0, 0, sqrt(SIMULATION_AREA), sqrt(SIMULATION_AREA)));
+		pos = c();
+	
+		for (i in 0:(sqrt(POPULATION_SIZE) - 1)) { // x axis
+			for (j in 0:(sqrt(POPULATION_SIZE) - 1)) { // y axis
+				pos = c(pos, runif(1, (i*GRID_SIDE_LENGTH), ((i+1)*GRID_SIDE_LENGTH)));
+				pos = c(pos, runif(1, (j*GRID_SIDE_LENGTH), ((j+1)*GRID_SIDE_LENGTH)));
+			}	
+		}
+		p1.individuals.setSpatialPosition(pos);
+	}
+}
+2: early() {
+	// kill parents
+	inds = p1.individuals;
+	if(community.tick == 3) {
+		parents = inds[inds.age > 0];
+		for (i in 0:(length(parents)-1)) {
+		 	writeFile(OUTPREFIX  + "_" + community.tick + "_" + DISPERSAL_DISTANCE + "_fecundity.txt", paste(parents[i].index, parents[i].x, parents[i].y, parents[i].reproductiveOutput, sep = " "), append = T);
+		}
+	}
+	sim.killIndividuals(inds[inds.age > 0]);
+}
+
+3 late() {
+	sim.simulationFinished();
+}
