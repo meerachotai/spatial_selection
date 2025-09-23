@@ -192,7 +192,7 @@ fig.legend([custom_line],["neutral"], bbox_to_anchor=(0.45, 0.8), fontsize = 'sm
 
 # fig.tight_layout()
 
-for i, label in enumerate(('A', '', '','B', '')):
+for i, label in enumerate(('a', '', '','b', '')):
     axs[0,i].text(-0.35, 1.1, label, transform=axs[0,i].transAxes, fontsize = 8, weight = "bold")
 
 # fig.tight_layout()

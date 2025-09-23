@@ -1,4 +1,4 @@
-This repository contains scripts for the following manuscript: Chotai, Wei and Messer (2024): https://www.biorxiv.org/content/10.1101/2024.07.26.605365v1.
+This repository contains scripts for the following manuscript: Chotai, Wei, and Messer, Signatures of selective sweeps in continuous-space populations, Genetics, 2025; iyaf183, https://doi.org/10.1093/genetics/iyaf183
 
 Directory: `model` contains SLiM and msprime scripts for the simulation model
 1. For sweeps in continuous space:
@@ -37,4 +37,4 @@ Directory: `statistics` contains python scripts that use `tskit` and `scikit-all
     * Subdirectory `statistics/supplement_statistics/garudh_stats`: runs [`allel.HaplotypeArray.moving_garud_h`](https://scikit-allel.readthedocs.io/en/stable/stats/selection.html#allel.moving_garud_h). [Figure S8]
     * Subdirectory `statistics/supplement_statistics/neutral_stats`: runs $F_{ST}$ and PCA analyses. [Figure S3]
 
-Directory: `plot` contains python scripts for generating figures and supplement figures in the manuscript and a zipped file `plot/data.zip` with raw-data files needed to generate the figures.
+Directory: `plot` contains python scripts for generating figures and supplement figures in the manuscript and `plot/data.tar.gz` contains raw-data files needed to generate the figures.

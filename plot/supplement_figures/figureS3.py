@@ -33,7 +33,7 @@ ax5 = fig.add_subplot(gs[1, 4])
 ax6 = fig.add_subplot(gs[1, 6])
 
 pca_axes = [ax3,ax4,ax5,ax6]
-# ----------------------------Figure S3A----------------------------
+# ----------------------------Figure S3B----------------------------
 DIR = "data/supplement_data/fst_pca/"
 file = DIR + "neutral.fst"
 
@@ -61,8 +61,8 @@ ax2.set_xticks(dispersal_array)
 ax2.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
 plt.setp(ax2.xaxis.get_majorticklabels(), rotation=60, ha = "right",rotation_mode="anchor") 
 
-ax2.text(-0.1, 1.1, 'B', transform=ax2.transAxes, fontsize = 5,va='top', ha='right', weight = "bold")
-# ----------------------------Figure S3B----------------------------
+ax2.text(-0.1, 1.1, 'b', transform=ax2.transAxes, fontsize = 5,va='top', ha='right', weight = "bold")
+# ----------------------------Figure S3A----------------------------
 
 colors = ["indianred", "dodgerblue"]
 DISPERSAL = 0.015
@@ -76,7 +76,7 @@ ax1.set_ylim(0,1)
 ax1.set_xlim(0,1)
 ax1.set_ylabel("y")
 
-ax1.text(-0.1, 1.1, 'A', transform=ax1.transAxes, fontsize = 5,va='top', ha='right', weight = "bold")
+ax1.text(-0.1, 1.1, 'a', transform=ax1.transAxes, fontsize = 5,va='top', ha='right', weight = "bold")
 # ----------------------------Figure S3C----------------------------
 
 dispersal_array = [0.015, 0.04, 0.1, 0.5]
@@ -98,7 +98,7 @@ pca_axes[2].set_ylabel("PC2", labelpad=0.4)
 
 pca_axes[2].set_xlabel("PC1")
 pca_axes[3].set_xlabel("PC1")
-pca_axes[0].text(-0.1, 1.22, 'C', transform=pca_axes[0].transAxes, fontsize = 5,va='top', ha='right', weight = "bold")
+pca_axes[0].text(-0.1, 1.22, 'c', transform=pca_axes[0].transAxes, fontsize = 5,va='top', ha='right', weight = "bold")
 
 fig.tight_layout()
 fig.savefig("figS3.pdf",bbox_inches = "tight", transparent = True)

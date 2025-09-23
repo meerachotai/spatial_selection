@@ -98,7 +98,7 @@ axs[1].set_xlabel("H12")
 # axs.set_xlim([0,1])
 # axs[1].legend(loc='upper right')
 
-for i, label in enumerate(('A', 'B')):
+for i, label in enumerate(('a', 'b')):
     axs[i].text(-0.12, 1.05, label, transform=axs[i].transAxes, fontsize = 8, weight = "bold")
 
 fig.tight_layout()

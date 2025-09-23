@@ -163,10 +163,10 @@ axbig.set_ylim([0,25]) # 10
 axbig.legend(bbox_to_anchor=(0.34, 1), loc='upper right', borderpad = 0.25)
 
 ax = axs.flatten()
-for i, label in enumerate(('A', '')):
+for i, label in enumerate(('a', '')):
     ax[i].text(-0.35, 1.12, label, transform=ax[i].transAxes, fontsize = 8,va='top', ha='right', weight = "bold")
 
-axbig.text(-0.17, 1.12, "B", transform=axbig.transAxes, fontsize = 8,va='top', ha='right', weight = "bold")
+axbig.text(-0.17, 1.12, "b", transform=axbig.transAxes, fontsize = 8,va='top', ha='right', weight = "bold")
 
 
 # -----------------------------------------------------------------------

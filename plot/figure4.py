@@ -93,7 +93,7 @@ ax[0].set_ylabel("time to fixation (relative to panmictic)")
 lines,labels = ax[0].get_legend_handles_labels()
 ax[0].legend(lines, labels,bbox_to_anchor=(0.9, 0.95), loc='upper right',markerscale=0.8)
 
-for i, label in enumerate(('A', 'B')):
+for i, label in enumerate(('a', 'b')):
     ax[i].text(-0.4, 1.2, label, transform=ax[i].transAxes, fontsize = 8,va='top', ha='right', weight = "bold")
     
 # fig.tight_layout()

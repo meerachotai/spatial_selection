@@ -140,7 +140,7 @@ for ax, row in zip(axs[0:2,0], LABELS):
     ax.annotate(row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
                 xycoords=ax.yaxis.label, textcoords='offset points', ha='right', va='center',rotation = 90)
     
-for i, label in enumerate(('A', '', '','B')):
+for i, label in enumerate(('a', '', '','b')):
     axs[i,0].text(-0.68, 1.1, label, transform=axs[i,0].transAxes, fontsize = 8, weight = "bold")
 
 # ------------------------------------------------------------------
@@ -244,7 +244,7 @@ for idx, DISPERSAL_DISTANCE in enumerate(disp_arr):
         if(idx == 0):
             break
 
-for i, label in enumerate(('C', '')):
+for i, label in enumerate(('c', '')):
     axs[i].text(-0.21, 1.2, label, transform=axs[i].transAxes, fontsize = 8,va='top', ha='right', weight = "bold")
 
 for spine in ax3_top.spines.values():
@@ -397,7 +397,7 @@ fig.legend(handles, labels, bbox_to_anchor=(0.88, 0.46),markerscale=1, handletex
 handles, labels = axs[-1,1].get_legend_handles_labels()
 fig.legend(handles, labels, bbox_to_anchor=(0.88, 0.27),markerscale=1, handletextpad = 0.01, title = "window size", labelspacing = 0.2, borderpad = 0.05)
 
-for i, label in enumerate(('D', '', '','E', '')):
+for i, label in enumerate(('d', '', '','e', '')):
     axs[i,0].text(-0.65, 1.1, label, transform=axs[i,0].transAxes, fontsize = 8, weight = "bold")
 
 fig.savefig("fig6right.pdf", bbox_inches = "tight", transparent = True)
